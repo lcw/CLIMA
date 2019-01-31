@@ -594,8 +594,8 @@ end
 
 # {{{ RHS function
 function AD.rhs!(rhs::DeviceArray,
-                 runner::Runner{DeviceArray}) where DeviceArray
-  state = runner.state
+                 runner::Runner{DeviceArray};
+                 Q = runner.state.Q) where DeviceArray
   config = runner.config
   params = runner.params
   mesh = config.mesh
@@ -615,8 +615,6 @@ function AD.rhs!(rhs::DeviceArray,
   vmapP = config.vmapP
   gravity = config.gravity
   elemtobndy = config.elemtobndy
-
-  Q = state.Q
 
   N   = params.N
   dim = params.dim
