@@ -17,6 +17,8 @@ include("VanillaEuler.jl")
 
 include("LSRK.jl")
 
+include("JDE.jl")
+
 include("GenericCallbacks.jl")
 
 end # module
