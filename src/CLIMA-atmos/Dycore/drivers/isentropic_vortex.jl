@@ -92,9 +92,10 @@ function main()
   N  = 4
 
   for DFloat in (Float64, Float32)
-    for dim in (2, 3)
+    #for dim in (2, 3)
+    dim = 2
+    for use_diffeq = (false, true)
       for backend in (HAVE_CUDA ? (CuArray, Array) : (Array,))
-
         runner = AD.Runner(mpicomm,
                            #Space Discretization and Parameters
                            :VanillaEuler,
@@ -108,7 +109,7 @@ function main()
                             N = N,
                            ),
                            # Time Discretization and Parameters
-                           :LSRK,
+                           (use_diffeq) ? :JDE : :LSRK,
                            (),
                           )
 
@@ -122,7 +123,7 @@ function main()
         dt = timeend / nsteps
 
         # Set the time step
-        AD.inittimestate!(runner, dt)
+        !use_diffeq && AD.inittimestate!(runner, dt)
 
         eng0 = AD.L2solutionnorm(runner; host=true)
         # mpirank == 0 && @show eng0
@@ -160,8 +161,18 @@ function main()
           end
 
         dump_vtk(0)
-        AD.run!(runner; numberofsteps=nsteps, callbacks=(cbinfo, cbvtk,
-                                                         cberr))
+        if use_diffeq
+          AD.run!(runner; ad_timerange=(zero(timeend), timeend),
+                  dt=dt)
+        else
+          AD.run!(runner; numberofsteps=nsteps,
+                  callbacks=(cbinfo, cbvtk, cberr))
+        end
+
+        err = AD.L2errornorm(runner, isentropicvortex; host=true)
+        println(io, "VanillaEuler with errnorm2(Q) = ", err,
+                " at time = ", timeend)
+
         dump_vtk(nsteps)
 
         engf = AD.L2solutionnorm(runner; host=true)
